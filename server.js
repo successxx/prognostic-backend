@@ -9,12 +9,12 @@ app.use(express.json());
 let storedText = '';
 
 app.post('/setText', (req, res) => {
-    storedText = req.body.text;
-    res.json({ success: true });
+  latestText = req.body.text;
+  res.json({ success: true });
 });
 
 app.get('/getText', (req, res) => {
-    res.json({ text: storedText });
+  res.json({ text: latestText });
 });
 
 app.listen(port, () => {
