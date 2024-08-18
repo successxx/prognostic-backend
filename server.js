@@ -1,12 +1,14 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const cors = require('cors');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(bodyParser.json());
 app.use(cors());
-app.use(express.json());
 
-let storedText = '';
+let latestText = '';
 
 app.post('/setText', (req, res) => {
   latestText = req.body.text;
@@ -18,5 +20,5 @@ app.get('/getText', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
