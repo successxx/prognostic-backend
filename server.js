@@ -11,22 +11,15 @@ app.use(cors());
 
 let latestText = '';
 
-// POST endpoint to accept the text and replace newlines with spaces
 app.post('/setText', (req, res) => {
-  try {
-    latestText = req.body.text.replace(/\r?\n|\r/g, ' ');  // Replace newlines with spaces
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error processing text:', error.message);
-    res.status(400).json({ success: false, error: error.message });
-  }
+  latestText = req.body.text;
+  res.json({ success: true });
 });
 
-// GET endpoint to retrieve the stored text
 app.get('/getText', (req, res) => {
   res.json({ text: latestText });
 });
 
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(Server running on port ${port});
 });
