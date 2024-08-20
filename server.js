@@ -1,10 +1,23 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
-app.use(bodyParser.json({ limit: '50mb' }));
+
+// Move this middleware before route definitions
+app.use(express.json({
+  limit: '50mb',
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf);
+    } catch(e) {
+      res.status(400).json({ error: 'Invalid JSON' });
+      throw new Error('Invalid JSON');
+    }
+  }
+}));
+
 app.use(cors());
+
 let latestText = '';
 
 // Function to convert Markdown to actual HTML, avoiding HTML entities
@@ -21,7 +34,7 @@ function markdownToHtml(text) {
 app.post('/setText', (req, res) => {
   try {
     if (!req.body || typeof req.body.text !== 'string') {
-      console.error('Invalid request body received:', req.body);
+      console.error('Invalid request body received:', JSON.stringify(req.body));
       return res.status(400).json({ 
         success: false, 
         error: 'Invalid request body. Expected {text: string}' 
@@ -34,7 +47,7 @@ app.post('/setText', (req, res) => {
     // Respond with success
     res.json({ success: true });
   } catch (error) {
-    console.error('Error in /setText:', error);
+    console.error('Error in /setText:', error.message, '\nStack:', error.stack);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
