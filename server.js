@@ -9,13 +9,13 @@ app.use(cors());
 
 let latestText = '';
 
-// Helper function to convert Markdown to HTML
 function markdownToHtml(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/^### (.*$)/gm, '<h3>$1</h3>')
     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1>$1</h1>');
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/\n/g, '<br>'); // Add this line to preserve line breaks
 }
 
 app.post('/setText', (req, res) => {
@@ -27,9 +27,8 @@ app.post('/setText', (req, res) => {
         error: 'Invalid request body. Expected {text: string}' 
       });
     }
-
-    // Convert Markdown to HTML and replace <br> with newlines
-    latestText = markdownToHtml(req.body.text).replace(/<br>/g, '\n');
+    // Convert Markdown to HTML
+    latestText = markdownToHtml(req.body.text);
     
     res.json({ success: true });
   } catch (error) {
