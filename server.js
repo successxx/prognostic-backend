@@ -3,10 +3,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
-
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(cors());
-
 let latestText = '';
 
 // Function to convert Markdown to actual HTML, avoiding HTML entities
@@ -29,8 +27,10 @@ app.post('/setText', (req, res) => {
         error: 'Invalid request body. Expected {text: string}' 
       });
     }
+    // Decode the incoming text
+    const decodedText = decodeURIComponent(req.body.text);
     // Convert Markdown to HTML and save the result
-    latestText = markdownToHtml(req.body.text);
+    latestText = markdownToHtml(decodedText);
     // Respond with success
     res.json({ success: true });
   } catch (error) {
