@@ -26,8 +26,8 @@ app.post('/setText', (req, res) => {
       });
     }
 
-    // Unescape the newline characters
-    latestText = req.body.text.replace(/\\n/g, '\n');
+    // Replace HTML line breaks with actual newline characters
+    latestText = req.body.text.replace(/<br>/g, '\n');
     
     console.log(`Received text (length: ${latestText.length}). Preview: ${sanitizeForLog(latestText)}`);
     res.json({ success: true });
