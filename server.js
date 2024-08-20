@@ -15,7 +15,13 @@ app.use(express.json({
     }
   }
 }));
-app.use(cors());
+
+const corsOptions = {
+  origin: '*', // In production, replace with your frontend's domain
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
 
 let latestText = '';
 
@@ -28,13 +34,12 @@ function markdownToHtml(text) {
     .replace(/\n/g, '<br>');
 }
 
-app.post('/setText', (req, res) => {
+app.post('/setText', (req, res, next) => {
   console.log('Received POST request to /setText');
   console.log('Request body:', JSON.stringify(req.body));
   
   try {
     if (!req.body || typeof req.body.text !== 'string') {
-      console.error('Invalid request body received:', JSON.stringify(req.body));
       return res.status(400).json({ 
         success: false, 
         error: 'Invalid request body. Expected {text: string}' 
@@ -44,21 +49,42 @@ app.post('/setText', (req, res) => {
     const decodedText = decodeURIComponent(req.body.text);
     console.log('Decoded text:', decodedText);
     
-    latestText = markdownToHtml(decodedText);
+    latestText = markdownToHtml(decodedText) || '';
     console.log('Converted HTML:', latestText);
+    console.log('latestText length:', latestText.length);
     
-    res.json({ success: true });
+    res.json({ success: true, length: latestText.length });
   } catch (error) {
-    console.error('Error in /setText:', error.message, '\nStack:', error.stack);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    next(error);
   }
 });
 
-app.get('/getText', (req, res) => {
+app.get('/getText', (req, res, next) => {
   console.log('Received GET request to /getText');
   console.log('Current latestText content:', latestText);
   console.log('latestText length:', latestText.length);
-  res.json({ text: latestText });
+  
+  try {
+    if (!latestText) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'No content available' 
+      });
+    }
+    res.json({ success: true, text: latestText, length: latestText.length });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Add the error handling middleware here, after all your routes
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    error: 'Internal Server Error',
+    message: err.message
+  });
 });
 
 app.listen(port, () => {
