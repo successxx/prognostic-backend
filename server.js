@@ -26,8 +26,8 @@ app.post('/setText', (req, res) => {
       });
     }
 
-    // Parse the JSON-stringified text
-    latestText = JSON.parse(req.body.text);
+    // Unescape the newline characters
+    latestText = req.body.text.replace(/\\n/g, '\n');
     
     console.log(`Received text (length: ${latestText.length}). Preview: ${sanitizeForLog(latestText)}`);
     res.json({ success: true });
