@@ -8,11 +8,11 @@ app.use(cors());
 let latestText = '';
 function markdownToHtml(text) {
   return text
-    .replace(/\\*(.?)\\*/g, '<strong>$1</strong>')
-    .replace(/^### (.$)/gm, '<h3>$1</h3>')
-    .replace(/^## (.$)/gm, '<h2>$1</h2>')
-    .replace(/^# (.$)/gm, '<h1>$1</h1>')
-    .replace(/\n/g, '<br>'); // Add this line to preserve line breaks
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Fix bold
+    .replace(/### (.*)/g, '<h3>$1</h3>')  // Fix H3 headers
+    .replace(/## (.*)/g, '<h2>$1</h2>')   // Fix H2 headers
+    .replace(/# (.*)/g, '<h1>$1</h1>')    // Fix H1 headers
+    .replace(/\n/g, '<br>');              // Preserve line breaks
 }
 app.post('/setText', (req, res) => {
   try {
