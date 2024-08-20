@@ -9,13 +9,22 @@ app.use(cors());
 
 let latestText = '';
 
-function markdownToHtml(text) {
+function escapeHtml(text) {
   return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function markdownToHtml(text) {
+  return escapeHtml(text)
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/^### (.*$)/gm, '<h3>$1</h3>')
     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
     .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-    .replace(/\n/g, '<br>'); // Add this line to preserve line breaks
+    .replace(/\n/g, '<br>');
 }
 
 app.post('/setText', (req, res) => {
@@ -27,9 +36,10 @@ app.post('/setText', (req, res) => {
         error: 'Invalid request body. Expected {text: string}' 
       });
     }
-    // Convert Markdown to HTML
-    latestText = markdownToHtml(req.body.text);
+    // Store the raw text, not HTML
+    latestText = req.body.text;
     
+    console.log(`Received text (first 100 chars): ${latestText.substring(0, 100)}...`);
     res.json({ success: true });
   } catch (error) {
     console.error('Error in /setText:', error);
@@ -38,7 +48,10 @@ app.post('/setText', (req, res) => {
 });
 
 app.get('/getText', (req, res) => {
-  res.json({ text: latestText });
+  // Convert to HTML when sending
+  const htmlText = markdownToHtml(latestText);
+  console.log(`Sending HTML text (first 100 chars): ${htmlText.substring(0, 100)}...`);
+  res.json({ text: htmlText });
 });
 
 app.listen(port, () => {
