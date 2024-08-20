@@ -40,6 +40,7 @@ app.post('/setText', (req, res, next) => {
   
   try {
     if (!req.body || typeof req.body.text !== 'string') {
+      console.error('Invalid request body received:', JSON.stringify(req.body));
       return res.status(400).json({ 
         success: false, 
         error: 'Invalid request body. Expected {text: string}' 
@@ -50,8 +51,8 @@ app.post('/setText', (req, res, next) => {
     console.log('Decoded text:', decodedText);
     
     latestText = markdownToHtml(decodedText) || '';
-    console.log('Converted HTML:', latestText);
-    console.log('latestText length:', latestText.length);
+    console.log('Updated latestText:', latestText);
+    console.log('Updated latestText length:', latestText.length);
     
     res.json({ success: true, length: latestText.length });
   } catch (error) {
