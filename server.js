@@ -6,8 +6,6 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
-app.use(bodyParser.text({ limit: '50mb' }));
 app.use(cors());
 
 let latestText = '';
@@ -20,20 +18,17 @@ const sanitizeForLog = (text) => {
 
 app.post('/setText', (req, res) => {
   try {
-    let text;
-    if (typeof req.body === 'string') {
-      text = req.body;
-    } else if (req.body && typeof req.body.text === 'string') {
-      text = req.body.text;
-    } else {
+    if (!req.body || typeof req.body.text !== 'string') {
       console.error('Invalid request body received:', req.body);
       return res.status(400).json({ 
         success: false, 
-        error: 'Invalid request body. Expected string or {text: string}' 
+        error: 'Invalid request body. Expected {text: string}' 
       });
     }
 
-    latestText = text;
+    // Parse the JSON-stringified text
+    latestText = JSON.parse(req.body.text);
+    
     console.log(`Received text (length: ${latestText.length}). Preview: ${sanitizeForLog(latestText)}`);
     res.json({ success: true });
   } catch (error) {
