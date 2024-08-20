@@ -4,17 +4,19 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(cors());
 
 let latestText = '';
 
-// Helper function to sanitize logged text
-const sanitizeForLog = (text) => {
-  if (text.length <= 50) return text;
-  return text.substring(0, 25) + '...' + text.substring(text.length - 25);
-};
+// Helper function to convert Markdown to HTML
+function markdownToHtml(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>');
+}
 
 app.post('/setText', (req, res) => {
   try {
@@ -26,10 +28,9 @@ app.post('/setText', (req, res) => {
       });
     }
 
-    // Replace HTML line breaks with actual newline characters
-    latestText = req.body.text.replace(/<br>/g, '\n');
+    // Convert Markdown to HTML and replace <br> with newlines
+    latestText = markdownToHtml(req.body.text).replace(/<br>/g, '\n');
     
-    console.log(`Received text (length: ${latestText.length}). Preview: ${sanitizeForLog(latestText)}`);
     res.json({ success: true });
   } catch (error) {
     console.error('Error in /setText:', error);
@@ -38,19 +39,7 @@ app.post('/setText', (req, res) => {
 });
 
 app.get('/getText', (req, res) => {
-  try {
-    res.json({ text: latestText });
-    console.log(`Sent text (length: ${latestText.length}). Preview: ${sanitizeForLog(latestText)}`);
-  } catch (error) {
-    console.error('Error in /getText:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ success: false, error: 'Internal server error' });
+  res.json({ text: latestText });
 });
 
 app.listen(port, () => {
