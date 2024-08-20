@@ -5,6 +5,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.text({ limit: '50mb' })); // Add this line
 app.use(cors());
 
 let latestText = '';
@@ -12,27 +13,32 @@ let latestText = '';
 // Function to convert Markdown to actual HTML
 function markdownToHtml(text) {
   return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')              // Italic
-    .replace(/### (.*?)\n/g, '<h3>$1</h3>')            // H3
-    .replace(/## (.*?)\n/g, '<h2>$1</h2>')             // H2
-    .replace(/# (.*?)\n/g, '<h1>$1</h1>')              // H1
-    .replace(/\n/g, '<br>');                           // Line breaks
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/### (.*?)(\n|$)/g, '<h3>$1</h3>')
+    .replace(/## (.*?)(\n|$)/g, '<h2>$1</h2>')
+    .replace(/# (.*?)(\n|$)/g, '<h1>$1</h1>')
+    .replace(/\n/g, '<br>');
 }
 
 // POST endpoint to accept text and convert it to HTML
 app.post('/setText', (req, res) => {
   try {
-    if (!req.body || typeof req.body.text !== 'string') {
+    let inputText;
+    if (typeof req.body === 'string') {
+      inputText = req.body;
+    } else if (req.body && typeof req.body.text === 'string') {
+      inputText = req.body.text;
+    } else {
       console.error('Invalid request body received:', req.body);
       return res.status(400).json({ 
         success: false, 
-        error: 'Invalid request body. Expected {text: string}' 
+        error: 'Invalid request body. Expected string or {text: string}' 
       });
     }
     
     // Convert Markdown to HTML and save the result
-    latestText = markdownToHtml(req.body.text);
+    latestText = markdownToHtml(inputText);
     
     // Respond with success
     res.json({ success: true });
