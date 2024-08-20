@@ -31,7 +31,6 @@ app.post('/setText', (req, res) => {
     }
     // Convert Markdown to HTML and save the result
     latestText = markdownToHtml(req.body.text);
-
     // Respond with success
     res.json({ success: true });
   } catch (error) {
