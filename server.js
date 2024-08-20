@@ -56,7 +56,8 @@ app.post('/setText', (req, res) => {
 
 app.get('/getText', (req, res) => {
   console.log('Received GET request to /getText');
-  console.log('Sending latestText:', latestText);
+  console.log('Current latestText content:', latestText);
+  console.log('latestText length:', latestText.length);
   res.json({ text: latestText });
 });
 
