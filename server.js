@@ -9,14 +9,15 @@ app.use(cors());
 
 let latestText = '';
 
-// Function to convert Markdown to actual HTML, avoiding HTML entities
+// Function to convert Markdown to actual HTML
 function markdownToHtml(text) {
   return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Handle bold properly
-    .replace(/### (.*)/g, '<h3>$1</h3>')  // Handle H3 headers
-    .replace(/## (.*)/g, '<h2>$1</h2>')   // Handle H2 headers
-    .replace(/# (.*)/g, '<h1>$1</h1>')    // Handle H1 headers
-    .replace(/\n/g, '<br>');              // Convert line breaks
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')              // Italic
+    .replace(/### (.*?)\n/g, '<h3>$1</h3>')            // H3
+    .replace(/## (.*?)\n/g, '<h2>$1</h2>')             // H2
+    .replace(/# (.*?)\n/g, '<h1>$1</h1>')              // H1
+    .replace(/\n/g, '<br>');                           // Line breaks
 }
 
 // POST endpoint to accept text and convert it to HTML
@@ -29,9 +30,10 @@ app.post('/setText', (req, res) => {
         error: 'Invalid request body. Expected {text: string}' 
       });
     }
+    
     // Convert Markdown to HTML and save the result
     latestText = markdownToHtml(req.body.text);
-
+    
     // Respond with success
     res.json({ success: true });
   } catch (error) {
@@ -42,7 +44,6 @@ app.post('/setText', (req, res) => {
 
 // GET endpoint to return the latest converted HTML
 app.get('/getText', (req, res) => {
-  // Directly return the HTML, no need for further encoding
   res.json({ text: latestText });
 });
 
