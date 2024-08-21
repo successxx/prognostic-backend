@@ -31,12 +31,7 @@ function markdownToHtml(text) {
     .replace(/### (.*)/g, '<h3>$1</h3>')
     .replace(/## (.*)/g, '<h2>$1</h2>')
     .replace(/# (.*)/g, '<h1>$1</h1>')
-    .replace(/\n/g, '<br>')
-    // Add support for sections, articles, etc.
-    .replace(/SECTION_START/g, '<section>')
-    .replace(/SECTION_END/g, '</section>')
-    .replace(/ARTICLE_START/g, '<article>')
-    .replace(/ARTICLE_END/g, '</article>');
+    .replace(/\n/g, '<br>');
 }
 
 app.post('/setText', (req, res, next) => {
