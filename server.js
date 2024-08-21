@@ -32,10 +32,10 @@ function markdownToHtml(text) {
     .replace(/### (.*)/g, '<h3>$1</h3>')
     .replace(/## (.*)/g, '<h2>$1</h2>')
     .replace(/# (.*)/g, '<h1>$1</h1>')
-    .replace(/\[SECTION:(.*?)\]\((.*?)\)\n([\s\S]*?)(?=\[SECTION|$)/g, (match, title, image, content) => `
+    .replace(/\[SECTION:(.*?)\]\((.*?)\)\n([\s\S]*?)(?=\[SECTION|$)/g, (match, title, icon, content) => `
       <div class="section-container">
-        <div class="section-image">
-          <img src="${image}" alt="${title}">
+        <div class="section-icon">
+          <i class="fas fa-${icon}"></i>
         </div>
         <div class="section-content">
           <h2>${title}</h2>
@@ -58,11 +58,11 @@ function markdownToHtml(text) {
     })
     .replace(/\[REPLACEMENTS\]\n((?:- .*\n)+)/g, (match, list) => {
       const items = list.split('\n').filter(item => item.trim() !== '').map(item => {
-        return `<img class="replacement-logo" src="${item.replace('- ', '')}" alt="Replacement">`;
+        return `<span class="replacement-logo">${item.replace('- ', '')}</span>`;
       }).join('');
       return `<div class="replacements">${items}</div>`;
     })
-    .replace(/\[CTA:(.*?)\]/g, '<a href="#" class="demo-button">$1</a>')
+    .replace(/\[CTA:(.*?)\]/g, '<a href="#" class="cta-button">$1</a>')
     .replace(/\n/g, '<br>');
 }
 
