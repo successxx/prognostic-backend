@@ -30,25 +30,39 @@ function markdownToHtml(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/### (.*)/g, '<h3>$1</h3>')
-    .replace(/## (.*)/g, '<h2>$2</h2>')
+    .replace(/## (.*)/g, '<h2>$1</h2>')
     .replace(/# (.*)/g, '<h1>$1</h1>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<div class="feature-box"><div class="feature-icon"><i class="fas fa-$2"></i></div><h3>$1</h3></div>')
-    .replace(/Compare:\s*\n((?:- .*\n)+)VS\s*\n((?:- .*\n)+)/g, (match, left, right) => {
-      const leftItems = left.split('\n').filter(item => item.trim() !== '').map(item => item.replace('- ', '')).join('</li><li>');
-      const rightItems = right.split('\n').filter(item => item.trim() !== '').map(item => item.replace('- ', '')).join('</li><li>');
-      return `
-        <div class="comparison-box">
-          <div class="comparison-column">
-            <h3>Without</h3>
-            <ul class="comparison-list negative"><li>${leftItems}</li></ul>
-          </div>
-          <div class="comparison-column">
-            <h3>With</h3>
-            <ul class="comparison-list"><li>${rightItems}</li></ul>
-          </div>
+    .replace(/\[SECTION:(.*?)\]\((.*?)\)\n([\s\S]*?)(?=\[SECTION|$)/g, (match, title, image, content) => `
+      <div class="section-container">
+        <div class="section-image">
+          <img src="${image}" alt="${title}">
         </div>
-      `;
+        <div class="section-content">
+          <h2>${title}</h2>
+          ${content}
+        </div>
+      </div>
+    `)
+    .replace(/\[FEATURES\]\n((?:- .*\n)+)/g, (match, list) => {
+      const items = list.split('\n').filter(item => item.trim() !== '').map(item => {
+        const [icon, text] = item.replace('- ', '').split(':');
+        return `<div class="feature-item"><i class="fas fa-${icon}"></i>${text}</div>`;
+      }).join('');
+      return `<div class="feature-list">${items}</div>`;
     })
+    .replace(/\[BULLETS\]\n((?:> .*\n)+)/g, (match, list) => {
+      const items = list.split('\n').filter(item => item.trim() !== '').map(item => {
+        return `<li>${item.replace('> ', '')}</li>`;
+      }).join('');
+      return `<ul class="bullet-list">${items}</ul>`;
+    })
+    .replace(/\[REPLACEMENTS\]\n((?:- .*\n)+)/g, (match, list) => {
+      const items = list.split('\n').filter(item => item.trim() !== '').map(item => {
+        return `<img class="replacement-logo" src="${item.replace('- ', '')}" alt="Replacement">`;
+      }).join('');
+      return `<div class="replacements">${items}</div>`;
+    })
+    .replace(/\[CTA:(.*?)\]/g, '<a href="#" class="demo-button">$1</a>')
     .replace(/\n/g, '<br>');
 }
 
