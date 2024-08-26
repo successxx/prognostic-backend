@@ -29,16 +29,16 @@ let latestText = '';
 function markdownToHtml(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/### (.*)/g, '<h3>$1</h3>')
-    .replace(/## (.*)/g, '<h2>$1</h2>')
-    .replace(/# (.*)/g, '<h1>$1</h1>')
+    .replace(/### (.*)/g, '<h3 class="text-xl font-bold mb-2">$1</h3>')
+    .replace(/## (.*)/g, '<h2 class="text-2xl font-bold mb-4">$1</h2>')
+    .replace(/# (.*)/g, '<h1 class="text-3xl font-bold mb-6">$1</h1>')
     .replace(/\[SECTION:(.*?)\]\((.*?)\)\n([\s\S]*?)(?=\[SECTION|$)/g, (match, title, icon, content) => `
-      <div class="section-container">
-        <div class="section-icon">
-          <i class="fas fa-${icon}"></i>
+      <div class="section-container mb-8">
+        <div class="section-icon mb-4">
+          <i class="fas fa-${icon} text-4xl text-blue-500"></i>
         </div>
         <div class="section-content">
-          <h2>${title}</h2>
+          <h2 class="text-2xl font-bold mb-4">${title}</h2>
           ${content}
         </div>
       </div>
@@ -46,23 +46,23 @@ function markdownToHtml(text) {
     .replace(/\[FEATURES\]\n((?:- .*\n)+)/g, (match, list) => {
       const items = list.split('\n').filter(item => item.trim() !== '').map(item => {
         const [icon, text] = item.replace('- ', '').split(':');
-        return `<div class="feature-item"><i class="fas fa-${icon}"></i>${text}</div>`;
+        return `<div class="feature-item flex items-center mb-2"><i class="fas fa-${icon} mr-2 text-blue-500"></i>${text}</div>`;
       }).join('');
       return `<div class="feature-list">${items}</div>`;
     })
     .replace(/\[BULLETS\]\n((?:> .*\n)+)/g, (match, list) => {
       const items = list.split('\n').filter(item => item.trim() !== '').map(item => {
-        return `<li>${item.replace('> ', '')}</li>`;
+        return `<li class="mb-2">${item.replace('> ', '')}</li>`;
       }).join('');
-      return `<ul class="bullet-list">${items}</ul>`;
+      return `<ul class="bullet-list list-disc pl-5">${items}</ul>`;
     })
     .replace(/\[REPLACEMENTS\]\n((?:- .*\n)+)/g, (match, list) => {
       const items = list.split('\n').filter(item => item.trim() !== '').map(item => {
-        return `<span class="replacement-logo">${item.replace('- ', '')}</span>`;
+        return `<span class="replacement-logo inline-block mr-4 mb-2">${item.replace('- ', '')}</span>`;
       }).join('');
-      return `<div class="replacements">${items}</div>`;
+      return `<div class="replacements flex flex-wrap">${items}</div>`;
     })
-    .replace(/\[CTA:(.*?)\]/g, '<a href="#" class="cta-button">$1</a>')
+    .replace(/\[CTA:(.*?)\]/g, '<a href="#" class="cta-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-block mt-4">$1</a>')
     .replace(/\n/g, '<br>');
 }
 
@@ -105,6 +105,35 @@ app.get('/getText', (req, res, next) => {
       });
     }
     res.json({ success: true, text: latestText, length: latestText.length });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/getClickFunnelsStyle', (req, res, next) => {
+  try {
+    if (!latestText) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'No content available' 
+      });
+    }
+
+    // Parse the latestText to extract sections
+    const sections = latestText.split('<h2>').slice(1).map(section => {
+      const [title, ...content] = section.split('</h2>');
+      return {
+        title: title.trim(),
+        bullets: content.join('</h2>').split('<br>').filter(bullet => bullet.trim())
+      };
+    });
+
+    const clickFunnelsContent = {
+      title: "Your PrognosticAI Vision",
+      sections: sections
+    };
+
+    res.json({ success: true, content: clickFunnelsContent });
   } catch (error) {
     next(error);
   }
