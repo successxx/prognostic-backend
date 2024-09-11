@@ -1,9 +1,9 @@
 const admin = require('firebase-admin');
-const serviceAccount = require('./prognosticai-default-rtdb.firebaseio.json');
+const serviceAccount = require('./prognosticai-firebase-adminsdk-3wsmj-2bd5c20060.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://your-project-name.firebaseio.com"
+  databaseURL: "https://prognosticai-default-rtdb.firebaseio.com"
 });
 
 const express = require('express');
@@ -31,8 +31,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-let latestText = '';
 
 function markdownToHtml(text) {
   return text
@@ -102,17 +100,28 @@ app.post('/setText', (req, res, next) => {
 
 app.get('/getText', (req, res, next) => {
   console.log('Received GET request to /getText');
-  console.log('Current latestText content:', latestText);
-  console.log('latestText length:', latestText.length);
   
   try {
-    if (!latestText) {
-      return res.status(404).json({ 
+    const { userId, quizId } = req.query;
+    if (!userId || !quizId) {
+      return res.status(400).json({ 
         success: false, 
-        error: 'No content available' 
+        error: 'User ID and Quiz ID are required' 
       });
     }
-    res.json({ success: true, text: latestText, length: latestText.length });
+
+    admin.database().ref(`quizzes/${quizId}/responses/${userId}`).once('value').then((snapshot) => {
+      const data = snapshot.val();
+      if (!data || !data.content) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'No content available for this user and quiz' 
+        });
+      }
+      res.json({ success: true, text: data.content, length: data.content.length });
+    }).catch((error) => {
+      next(error);
+    });
   } catch (error) {
     next(error);
   }
@@ -159,4 +168,34 @@ app.use((err, req, res, next) => {
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+});
+app.post('/setResult', (req, res, next) => {
+  console.log('Received POST request to /setResult');
+  console.log('Request body:', JSON.stringify(req.body));
+  
+  try {
+    if (!req.body || typeof req.body.text !== 'string' || !req.body.userId || !req.body.quizId) {
+      console.error('Invalid request body received:', JSON.stringify(req.body));
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid request body. Expected {text: string, userId: string, quizId: string}' 
+      });
+    }
+    
+    const decodedText = decodeURIComponent(req.body.text);
+    console.log('Decoded text:', decodedText);
+    
+    const processedText = markdownToHtml(decodedText) || '';
+    
+    admin.database().ref(`quizzes/${req.body.quizId}/responses/${req.body.userId}`).set({
+      content: processedText,
+      timestamp: admin.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      res.json({ success: true, length: processedText.length });
+    }).catch((error) => {
+      next(error);
+    });
+  } catch (error) {
+    next(error);
+  }
 });
