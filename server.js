@@ -1,3 +1,11 @@
+const admin = require('firebase-admin');
+const serviceAccount = require('./prognosticai-default-rtdb.firebaseio.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://your-project-name.firebaseio.com"
+});
+
 const express = require('express');
 const cors = require('cors');
 const app = express();
