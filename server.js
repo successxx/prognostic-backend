@@ -25,7 +25,7 @@ app.use(express.json({
 }));
 
 const corsOptions = {
-  origin: '*', // In production, replace with your frontend's domain
+  origin: 'https://see.prognostic.ai',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
@@ -72,27 +72,32 @@ function markdownToHtml(text) {
     .replace(/\n/g, '<br>');
 }
 
-app.post('/setText', (req, res, next) => {
-  console.log('Received POST request to /setText');
+app.post('/setResult', (req, res, next) => {
+  console.log('Received POST request to /setResult');
   console.log('Request body:', JSON.stringify(req.body));
   
   try {
-    if (!req.body || typeof req.body.text !== 'string') {
+    if (!req.body || typeof req.body.text !== 'string' || !req.body.userId || !req.body.quizId) {
       console.error('Invalid request body received:', JSON.stringify(req.body));
       return res.status(400).json({ 
         success: false, 
-        error: 'Invalid request body. Expected {text: string}' 
+        error: 'Invalid request body. Expected {text: string, userId: string, quizId: string}' 
       });
     }
     
     const decodedText = decodeURIComponent(req.body.text);
     console.log('Decoded text:', decodedText);
     
-    latestText = markdownToHtml(decodedText) || '';
-    console.log('Updated latestText:', latestText);
-    console.log('Updated latestText length:', latestText.length);
+    const processedText = markdownToHtml(decodedText) || '';
     
-    res.json({ success: true, length: latestText.length });
+    admin.database().ref(`quizzes/${req.body.quizId}/responses/${req.body.userId}`).set({
+      content: processedText,
+      timestamp: admin.database.ServerValue.TIMESTAMP
+    }).then(() => {
+      res.json({ success: true, length: processedText.length });
+    }).catch((error) => {
+      next(error);
+    });
   } catch (error) {
     next(error);
   }
@@ -129,34 +134,46 @@ app.get('/getText', (req, res, next) => {
 
 app.get('/getClickFunnelsStyle', (req, res, next) => {
   try {
-    if (!latestText) {
-      return res.status(404).json({ 
+    const { userId, quizId } = req.query;
+    if (!userId || !quizId) {
+      return res.status(400).json({ 
         success: false, 
-        error: 'No content available' 
+        error: 'User ID and Quiz ID are required' 
       });
     }
 
-    // Parse the latestText to extract sections
-    const sections = latestText.split('<h2>').slice(1).map(section => {
-      const [title, ...content] = section.split('</h2>');
-      return {
-        title: title.trim(),
-        bullets: content.join('</h2>').split('<br>').filter(bullet => bullet.trim())
+    admin.database().ref(`quizzes/${quizId}/responses/${userId}`).once('value').then((snapshot) => {
+      const data = snapshot.val();
+      if (!data || !data.content) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'No content available for this user and quiz' 
+        });
+      }
+
+      const content = data.content;
+      const sections = content.split('<h2>').slice(1).map(section => {
+        const [title, ...content] = section.split('</h2>');
+        return {
+          title: title.trim(),
+          bullets: content.join('</h2>').split('<br>').filter(bullet => bullet.trim())
+        };
+      });
+
+      const clickFunnelsContent = {
+        title: "Your PrognosticAI Vision",
+        sections: sections
       };
+
+      res.json({ success: true, content: clickFunnelsContent });
+    }).catch((error) => {
+      next(error);
     });
-
-    const clickFunnelsContent = {
-      title: "Your PrognosticAI Vision",
-      sections: sections
-    };
-
-    res.json({ success: true, content: clickFunnelsContent });
   } catch (error) {
     next(error);
   }
 });
 
-// Add the error handling middleware here, after all your routes
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -168,34 +185,4 @@ app.use((err, req, res, next) => {
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-});
-app.post('/setResult', (req, res, next) => {
-  console.log('Received POST request to /setResult');
-  console.log('Request body:', JSON.stringify(req.body));
-  
-  try {
-    if (!req.body || typeof req.body.text !== 'string' || !req.body.userId || !req.body.quizId) {
-      console.error('Invalid request body received:', JSON.stringify(req.body));
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Invalid request body. Expected {text: string, userId: string, quizId: string}' 
-      });
-    }
-    
-    const decodedText = decodeURIComponent(req.body.text);
-    console.log('Decoded text:', decodedText);
-    
-    const processedText = markdownToHtml(decodedText) || '';
-    
-    admin.database().ref(`quizzes/${req.body.quizId}/responses/${req.body.userId}`).set({
-      content: processedText,
-      timestamp: admin.database.ServerValue.TIMESTAMP
-    }).then(() => {
-      res.json({ success: true, length: processedText.length });
-    }).catch((error) => {
-      next(error);
-    });
-  } catch (error) {
-    next(error);
-  }
 });
