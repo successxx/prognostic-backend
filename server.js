@@ -25,7 +25,7 @@ app.use(express.json({
 }));
 
 const corsOptions = {
-  origin: 'https://see.prognostic.ai',
+  origin: ['https://see.prognostic.ai', 'https://prognostic-backend.herokuapp.com'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
