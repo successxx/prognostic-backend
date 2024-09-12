@@ -1,10 +1,4 @@
-const admin = require('firebase-admin');
-const serviceAccount = require('./prognosticai-firebase-adminsdk-3wsmj-2bd5c20060.json');
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://prognosticai-default-rtdb.firebaseio.com"
-});
+Current backend code before individualized changes
 
 const express = require('express');
 const cors = require('cors');
@@ -25,12 +19,14 @@ app.use(express.json({
 }));
 
 const corsOptions = {
-  origin: ['https://see.prognostic.ai', 'https://prognostic-backend.herokuapp.com'],
+  origin: '*', // In production, replace with your frontend's domain
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
+
+let latestText = '';
 
 function markdownToHtml(text) {
   return text
@@ -72,32 +68,27 @@ function markdownToHtml(text) {
     .replace(/\n/g, '<br>');
 }
 
-app.post('/setResult', (req, res, next) => {
-  console.log('Received POST request to /setResult');
+app.post('/setText', (req, res, next) => {
+  console.log('Received POST request to /setText');
   console.log('Request body:', JSON.stringify(req.body));
   
   try {
-    if (!req.body || typeof req.body.text !== 'string' || !req.body.userId || !req.body.quizId) {
+    if (!req.body || typeof req.body.text !== 'string') {
       console.error('Invalid request body received:', JSON.stringify(req.body));
       return res.status(400).json({ 
         success: false, 
-        error: 'Invalid request body. Expected {text: string, userId: string, quizId: string}' 
+        error: 'Invalid request body. Expected {text: string}' 
       });
     }
     
     const decodedText = decodeURIComponent(req.body.text);
     console.log('Decoded text:', decodedText);
     
-    const processedText = markdownToHtml(decodedText) || '';
+    latestText = markdownToHtml(decodedText) || '';
+    console.log('Updated latestText:', latestText);
+    console.log('Updated latestText length:', latestText.length);
     
-    admin.database().ref(`quizzes/${req.body.quizId}/responses/${req.body.userId}`).set({
-      content: processedText,
-      timestamp: admin.database.ServerValue.TIMESTAMP
-    }).then(() => {
-      res.json({ success: true, length: processedText.length });
-    }).catch((error) => {
-      next(error);
-    });
+    res.json({ success: true, length: latestText.length });
   } catch (error) {
     next(error);
   }
@@ -105,28 +96,17 @@ app.post('/setResult', (req, res, next) => {
 
 app.get('/getText', (req, res, next) => {
   console.log('Received GET request to /getText');
+  console.log('Current latestText content:', latestText);
+  console.log('latestText length:', latestText.length);
   
   try {
-    const { userId, quizId } = req.query;
-    if (!userId || !quizId) {
-      return res.status(400).json({ 
+    if (!latestText) {
+      return res.status(404).json({ 
         success: false, 
-        error: 'User ID and Quiz ID are required' 
+        error: 'No content available' 
       });
     }
-
-    admin.database().ref(`quizzes/${quizId}/responses/${userId}`).once('value').then((snapshot) => {
-      const data = snapshot.val();
-      if (!data || !data.content) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'No content available for this user and quiz' 
-        });
-      }
-      res.json({ success: true, text: data.content, length: data.content.length });
-    }).catch((error) => {
-      next(error);
-    });
+    res.json({ success: true, text: latestText, length: latestText.length });
   } catch (error) {
     next(error);
   }
@@ -134,46 +114,34 @@ app.get('/getText', (req, res, next) => {
 
 app.get('/getClickFunnelsStyle', (req, res, next) => {
   try {
-    const { userId, quizId } = req.query;
-    if (!userId || !quizId) {
-      return res.status(400).json({ 
+    if (!latestText) {
+      return res.status(404).json({ 
         success: false, 
-        error: 'User ID and Quiz ID are required' 
+        error: 'No content available' 
       });
     }
 
-    admin.database().ref(`quizzes/${quizId}/responses/${userId}`).once('value').then((snapshot) => {
-      const data = snapshot.val();
-      if (!data || !data.content) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'No content available for this user and quiz' 
-        });
-      }
-
-      const content = data.content;
-      const sections = content.split('<h2>').slice(1).map(section => {
-        const [title, ...content] = section.split('</h2>');
-        return {
-          title: title.trim(),
-          bullets: content.join('</h2>').split('<br>').filter(bullet => bullet.trim())
-        };
-      });
-
-      const clickFunnelsContent = {
-        title: "Your PrognosticAI Vision",
-        sections: sections
+    // Parse the latestText to extract sections
+    const sections = latestText.split('<h2>').slice(1).map(section => {
+      const [title, ...content] = section.split('</h2>');
+      return {
+        title: title.trim(),
+        bullets: content.join('</h2>').split('<br>').filter(bullet => bullet.trim())
       };
-
-      res.json({ success: true, content: clickFunnelsContent });
-    }).catch((error) => {
-      next(error);
     });
+
+    const clickFunnelsContent = {
+      title: "Your PrognosticAI Vision",
+      sections: sections
+    };
+
+    res.json({ success: true, content: clickFunnelsContent });
   } catch (error) {
     next(error);
   }
 });
 
+// Add the error handling middleware here, after all your routes
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
