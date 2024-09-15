@@ -139,6 +139,11 @@ app.get('/getClickFunnelsStyle', (req, res, next) => {
   }
 });
 
+//Add default route
+app.get('/', (req, res) => {
+  res.send('Hello, World!');
+});
+
 // Add the error handling middleware here, after all your routes
 app.use((err, req, res, next) => {
   console.error(err.stack);
